@@ -1,0 +1,278 @@
+
+<div class="min-h-screen pb-20 font-sans">
+  <!-- Header -->
+  <header class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-black italic text-white">G</div>
+        <div class="flex flex-col">
+          <h1 class="text-xl font-black tracking-tighter uppercase leading-none">Global Pulse</h1>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <span class="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Live Feed ({{ activeCount() }} Topics)</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button 
+          (click)="refreshNews()"
+          class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-all text-xs font-bold text-zinc-300 hover:text-white border border-zinc-700"
+          [disabled]="isLoading() || isMoreLoading()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [class.animate-spin]="isLoading()"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          SYNC
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Categories Section (Checkbox Grid) -->
+  <nav class="max-w-7xl mx-auto px-4 py-8">
+    <div class="bg-zinc-900/40 border border-zinc-800 p-6 rounded-[2rem]">
+      <div class="flex items-center justify-between mb-6 border-b border-zinc-800/50 pb-4">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em]">Interest Profiles</span>
+          <h2 class="text-sm font-bold text-white uppercase tracking-tighter">Multi-Topic Filter</h2>
+        </div>
+        @if (activeCount() > 1 || !isCategoryActive('World')) {
+          <button (click)="clearAllCategories()" class="px-3 py-1 text-[10px] font-black text-red-500 uppercase border border-red-500/20 rounded-md hover:bg-red-500/10 transition-all">
+            Clear All
+          </button>
+        }
+      </div>
+      
+      <div class="flex flex-wrap gap-x-8 gap-y-6">
+        @for (cat of categories; track cat) {
+          <label class="flex items-center gap-3 cursor-pointer group select-none">
+            <div class="relative w-6 h-6 border-2 rounded-lg transition-all duration-200 flex items-center justify-center shadow-inner"
+                 [class.bg-red-600]="isCategoryActive(cat)"
+                 [class.border-red-600]="isCategoryActive(cat)"
+                 [class.border-zinc-700]="!isCategoryActive(cat)"
+                 [class.bg-zinc-800]="!isCategoryActive(cat)">
+              @if (isCategoryActive(cat)) {
+                <svg class="w-4 h-4 text-white animate-in zoom-in duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              }
+            </div>
+            <input 
+              type="checkbox" 
+              [checked]="isCategoryActive(cat)" 
+              (change)="toggleCategory(cat)" 
+              class="hidden"
+            >
+            <div class="flex flex-col">
+              <span class="text-xs font-black uppercase tracking-wider transition-colors duration-200"
+                    [class.text-white]="isCategoryActive(cat)"
+                    [class.text-zinc-500]="!isCategoryActive(cat)"
+                    [class.group-hover:text-zinc-300]="!isCategoryActive(cat)">
+                {{ cat }}
+              </span>
+              <span class="text-[8px] font-mono text-zinc-600 uppercase tracking-widest group-hover:text-zinc-500 transition-colors">
+                Channel {{ $index + 101 }}
+              </span>
+            </div>
+          </label>
+        }
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4">
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+      @if (isLoading() && newsItems().length === 0) {
+        <div class="col-span-full py-32 flex flex-col items-center justify-center gap-6 text-zinc-500">
+          <div class="relative w-16 h-16">
+            <div class="absolute inset-0 border-4 border-red-600/20 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div class="text-center">
+            <p class="font-black text-white uppercase tracking-widest text-sm mb-1">Synchronizing Streams</p>
+            <p class="text-xs text-zinc-500 font-mono">Verifying worldwide news grounding...</p>
+          </div>
+        </div>
+      } @else {
+        <!-- Main Highlight -->
+        @if (newsItems()[0]; as top) {
+          <div 
+            (click)="selectArticle(top)"
+            class="lg:col-span-8 group relative overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 cursor-pointer h-[450px] shadow-2xl transition-all hover:border-zinc-600"
+          >
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent z-10"></div>
+            <img src="https://picsum.photos/seed/news_featured/1200/800" alt="News Image" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-50">
+            <div class="absolute bottom-0 left-0 p-10 z-20 w-full">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-[0.1em] shadow-lg">Headline</span>
+                <span class="text-zinc-400 text-xs font-medium">{{ top.timestamp }} • {{ top.sourceName }} • <span class="text-red-400 font-bold uppercase">{{ top.category }}</span></span>
+              </div>
+              <h2 class="text-4xl md:text-5xl font-black text-white leading-[1.1] mb-6 group-hover:text-red-400 transition-colors drop-shadow-md">
+                {{ top.title }}
+              </h2>
+              <p class="text-zinc-300 text-xl max-w-2xl line-clamp-2 font-medium leading-relaxed opacity-90">{{ top.summary }}</p>
+            </div>
+          </div>
+        }
+
+        <!-- Side List -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          @for (item of newsItems().slice(1, 4); track $index) {
+            <div 
+              (click)="selectArticle(item)"
+              class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex gap-5 cursor-pointer hover:border-zinc-500 transition-all group shadow-sm active:scale-[0.98]"
+            >
+              <div class="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-zinc-800 border border-zinc-700">
+                <img [src]="'https://picsum.photos/seed/side_' + $index + '/300/300'" class="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform">
+              </div>
+              <div class="flex flex-col justify-between py-1">
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[9px] font-black text-red-500 uppercase tracking-wider">{{ item.category }}</span>
+                    <span class="text-[9px] text-zinc-500 font-mono">{{ item.timestamp }}</span>
+                  </div>
+                  <h3 class="text-sm font-black text-white line-clamp-2 leading-tight group-hover:text-red-400 transition-colors">
+                    {{ item.title }}
+                  </h3>
+                </div>
+                <div class="text-[10px] text-zinc-500 font-bold">{{ item.sourceName }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- More News Grid -->
+    @if (newsItems().length > 4) {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        @for (item of newsItems().slice(4); track $index) {
+          <div 
+            (click)="selectArticle(item)"
+            class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden cursor-pointer hover:border-zinc-500 transition-all group flex flex-col shadow-lg"
+          >
+            <div class="h-56 overflow-hidden bg-zinc-800 relative">
+              <img [src]="'https://picsum.photos/seed/grid_' + $index + '/600/400'" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700">
+              <div class="absolute top-4 left-4">
+                <span class="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black text-white uppercase tracking-widest">{{ item.category }}</span>
+              </div>
+            </div>
+            <div class="p-6 flex-1 flex flex-col">
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{{ item.sourceName }}</span>
+                <span class="text-[10px] text-zinc-600 font-mono">{{ item.timestamp }}</span>
+              </div>
+              <h4 class="text-xl font-black text-white leading-snug mb-4 group-hover:text-red-400 transition-colors">
+                {{ item.title }}
+              </h4>
+              <p class="text-sm text-zinc-400 line-clamp-2 mb-6 font-medium leading-relaxed">{{ item.summary }}</p>
+              <div class="mt-auto pt-4 border-t border-zinc-800 flex items-center justify-between">
+                <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Full Report</span>
+                <div class="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Infinite Scroll Sentinel & Loader -->
+    <div #sentinel class="h-32 flex items-center justify-center w-full mt-12">
+      @if (isMoreLoading()) {
+        <div class="flex flex-col items-center gap-3">
+          <div class="flex gap-1.5">
+            <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div class="w-2 h-2 bg-red-600 rounded-full animate-bounce"></div>
+          </div>
+          <span class="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Expanding Pulse Feed</span>
+        </div>
+      }
+    </div>
+  </main>
+
+  <!-- News Ticker -->
+  @if (newsItems().length > 0) {
+    <app-ticker [items]="newsItems()"></app-ticker>
+  }
+
+  <!-- Detail Modal -->
+  @if (selectedArticle(); as article) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/95 backdrop-blur-xl" (click)="closeDetails()"></div>
+      <div class="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_-12px_rgba(220,38,38,0.3)] animate-in fade-in zoom-in duration-300">
+        <button 
+          (click)="closeDetails()"
+          class="absolute top-6 right-6 z-20 bg-black/50 backdrop-blur-md text-white p-3 rounded-full hover:bg-red-600 transition-all shadow-xl"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        
+        <div class="h-72 bg-zinc-950 relative overflow-hidden group">
+          @if (isImageLoading()) {
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-900/50">
+              <div class="w-12 h-12 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin"></div>
+              <span class="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 animate-pulse">Generating Scene</span>
+            </div>
+          } @else if (articleImage()) {
+            <img [src]="articleImage()" class="w-full h-full object-cover animate-in fade-in duration-1000 transition-transform duration-[1500ms] group-hover:scale-110">
+          }
+          <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent"></div>
+        </div>
+
+        <div class="p-10 -mt-20 relative z-10">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <span class="px-3 py-1 bg-red-600 text-[10px] font-black text-white uppercase rounded-full shadow-lg tracking-widest">{{ article.category }}</span>
+              <span class="text-zinc-500 text-xs font-bold">{{ article.timestamp }} • {{ article.sourceName }}</span>
+            </div>
+            
+            <button 
+              (click)="toggleSpeech(article.summary)"
+              class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all border font-black uppercase tracking-tighter text-[11px]"
+              [class.bg-red-600]="isSpeaking()"
+              [class.border-red-600]="isSpeaking()"
+              [class.text-white]="isSpeaking()"
+              [class.bg-zinc-800]="!isSpeaking()"
+              [class.border-zinc-700]="!isSpeaking()"
+              [class.text-zinc-400]="!isSpeaking()"
+              [class.animate-pulse]="isSpeaking()"
+            >
+              @if (isSpeaking()) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="6" y="6" rx="2"/></svg>
+                Stop Report
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                Listen
+              }
+            </button>
+          </div>
+
+          <h2 class="text-3xl md:text-4xl font-black text-white mb-8 leading-tight tracking-tight">
+            {{ article.title }}
+          </h2>
+          <div class="text-zinc-300 space-y-6 text-lg leading-relaxed mb-10 font-medium">
+            <p>{{ article.summary }}</p>
+            <div class="p-4 bg-zinc-800/50 border-l-4 border-red-600 rounded-r-xl italic text-base text-zinc-400">
+              "This reporting includes verified grounding from real-time search metadata. Our systems are continuously monitoring the situation for live updates."
+            </div>
+            <p>Field correspondents report that implications could resonate across related industries for several weeks. Global Pulse will maintain coverage as more primary data becomes available.</p>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4">
+            @if (article.sourceUrl) {
+              <a [href]="article.sourceUrl" target="_blank" class="flex-[2] bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl uppercase tracking-tighter">
+                View Original Source
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              </a>
+            }
+            <button (click)="closeDetails()" class="flex-1 px-6 py-4 border-2 border-zinc-800 text-zinc-400 font-black rounded-2xl hover:bg-zinc-800 hover:text-white transition-all active:scale-95 uppercase tracking-tighter">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

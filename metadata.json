@@ -1,0 +1,5 @@
+{
+  "name": "Global News Explorer",
+  "description": "A high-performance news ticker application that fetches real-time headlines using Gemini Search Grounding, featuring a smooth scrolling ticker and categorized news feeds.",
+  "requestFramePermissions": []
+}
